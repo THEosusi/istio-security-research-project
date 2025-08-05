@@ -77,13 +77,13 @@ def append_item_to_parquet(filename, item):
 
 base_queries = {
     #mTLS-v1
-    "mtls_strict_v1": '"security.istio.io/v1" "kind: PeerAuthentication" "mtls: STRICT"',
-    "mtls_permissive_v1": '"security.istio.io/v1" "kind: PeerAuthentication" "mtls: PERMISSIVE"',
-    "mtls_disabled_v1": '"security.istio.io/v1" "kind: PeerAuthentication" "mtls: DISABLED"',
+    "mtls_strict_v1": '"security.istio.io/v1" "kind: PeerAuthentication" "mode: STRICT"',
+    "mtls_permissive_v1": '"security.istio.io/v1" "kind: PeerAuthentication" "mode: PERMISSIVE"',
+    "mtls_disabled_v1": '"security.istio.io/v1" "kind: PeerAuthentication" "mode: DISABLED"',
     #mTLS-v1beta1
-    "mtls_strict_v1beta1": '"security.istio.io/v1beta1" "kind: PeerAuthentication" "mtls: STRICT"',
-    "mtls_permissive_v1beta1": '"security.istio.io/v1beta1" "kind: PeerAuthentication" "mtls: PERMISSIVE"',
-    "mtls_disabled_v1beta1": '"security.istio.io/v1beta1" "kind: PeerAuthentication" "mtls: DISABLED"',
+    "mtls_strict_v1beta1": '"security.istio.io/v1beta1" "kind: PeerAuthentication" "mode: STRICT"',
+    "mtls_permissive_v1beta1": '"security.istio.io/v1beta1" "kind: PeerAuthentication" "mode: PERMISSIVE"',
+    "mtls_disabled_v1beta1": '"security.istio.io/v1beta1" "kind: PeerAuthentication" "mode: DISABLED"',
     #Authentication-v1
     "peer_auth_v1": '"security.istio.io/v1" "kind: PeerAuthentication"',
     "req_auth_v1": '"security.istio.io/v1" "kind: RequestAuthentication"',
@@ -123,7 +123,7 @@ def create_search_url(query_test, filename_pattern, page=1):
 
 # seeting for characters
 characters = string.ascii_lowercase + string.digits + "-"
-limited_characters = "abc"
+limited_characters = "ab"
 failed_responses = 0
 
 #create main output directory if it doesn't exist
@@ -151,55 +151,48 @@ for query_key, query_test in base_queries.items():
                 while True:
                     url = create_search_url(query_test, filename, page)
                     headers = get_headers()
+                    response = requests.get(url, headers=headers)
 
-                    try:
-                        response = requests.get(url, headers=headers)
+                    if response.status_code == 200:
+                        data = response.json()
+                        items = data.get("items", [])
 
-                        if response.status_code == 200:
-                            data = response.json()
-                            items = data.get("items", [])
+                        if not items:
+                            print(f"    No more results for filename {filename}, stopping at page {page}.")
+                            break
 
-                            if not items:
-                                print(f"    No more results for filename {filename}, stopping at page {page}.")
-                                break
+                        for item in items:
+                            repo_name = item["repository"]["full_name"]
 
-                            for item in items:
-                                repo_name = item["repository"]["full_name"]
-
-                                if repo_name not in full_name_exclude:
-                                    full_name_exclude.add(repo_name)
-                                    #create folder for the query if it doesn't exist
-                                    category=query_key.split('_')[0] #e.g., mtls, authz
-                                    version=query_key.split('_')[-1] #e.g., v1, v1beta1
-                                    #create output path:
-                                    folder_path = os.path.join(out_base_dir, category, version)
-                                    output_filename= os.path.join(folder_path, f"{query_key}_{char1}.parquet")
+                            if repo_name not in full_name_exclude:
+                                full_name_exclude.add(repo_name)
+                            #create folder for the query if it doesn't exist
+                            category=query_key.split('_')[0] #e.g., mtls, authz
+                            version=query_key.split('_')[-1] #e.g., v1, v1beta1
+                            #create output path:
+                            folder_path = os.path.join(out_base_dir, category, version)
+                            output_filename= os.path.join(folder_path, f"{query_key}_{char1}.parquet")
                                 
-                                    if append_item_to_parquet(output_filename, item):
-                                        saved_count += 1
-                            print(f"  page {page} for {filename} saved {saved_count} items.")
-                            rotate_token()
-                            time.sleep(2)
-                            break
-                        elif handle_rate_limit(response):
-                            continue
-                        else:
-                            failed_responses += 1
-                            print(f"    Failed: filename {filename}, page {page}")
-                            print(f"    Status: {response.status_code}, Response: {response.text}")
-                            break
-                    except Exception as e:
-                        query_failed_responses += 1
-                        print(f"    Error processing {filename}, page {page}: {e}")
+                            if append_item_to_parquet(output_filename, item):
+                                saved_count += 1
+                        print(f"  page {page} for {filename} saved {saved_count} items.")
+                        rotate_token()
+                        time.sleep(5)
+                        break
+                    elif handle_rate_limit(response):
+                        continue
+                    else:
+                        failed_responses += 1
+                        print(f"    Failed: filename {filename}, page {page}")
+                        print(f"    Status: {response.status_code}, Response: {response.text}")
                         break
 
             if failed_responses >= 6:
                 print("Too many failures, stopping.")
                 break
 
-        print(f"  completed {char1}:{saved_count} {len(full_name_exclude)} unique repositories found.")
-
         if  failed_responses >= 30:
             break
+    print(f"Query {query_key} completed with {len(full_name_exclude)} unique repositories found.")
 
 print("Done.")
