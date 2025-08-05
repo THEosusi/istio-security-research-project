@@ -167,15 +167,15 @@ for query_key, query_test in base_queries.items():
                             if repo_name not in full_name_exclude:
                                 full_name_exclude.add(repo_name)
                             #create folder for the query if it doesn't exist
-                            category=query_key.split('_')[0] #e.g., mtls, authz
-                            version=query_key.split('_')[-1] #e.g., v1, v1beta1
+                                category=query_key.split('_')[0] #e.g., mtls, authz
+                                version=query_key.split('_')[-1] #e.g., v1, v1beta1
                             #create output path:
-                            folder_path = os.path.join(out_base_dir, category, version)
-                            output_filename= os.path.join(folder_path, f"{query_key}_{char1}.parquet")
+                                folder_path = os.path.join(out_base_dir, category, version)
+                                output_filename= os.path.join(folder_path, f"{query_key}_{char1}.parquet")
                                 
-                            if append_item_to_parquet(output_filename, item):
-                                saved_count += 1
-                        print(f"  page {page} for {filename} saved {saved_count} items.")
+                                if append_item_to_parquet(output_filename, item):
+                                    saved_count += 1
+
                         rotate_token()
                         time.sleep(5)
                         break
@@ -196,3 +196,19 @@ for query_key, query_test in base_queries.items():
     print(f"Query {query_key} completed with {len(full_name_exclude)} unique repositories found.")
 
 print("Done.")
+
+"""
+Processing char1: a for query mtls_strict_v1
+  Checking filename: aa
+    No more results for filename aa, stopping at page 2.
+    No more results for filename aa, stopping at page 3.
+    No more results for filename aa, stopping at page 4.
+    No more results for filename aa, stopping at page 5.
+    No more results for filename aa, stopping at page 6.
+    No more results for filename aa, stopping at page 7.
+    No more results for filename aa, stopping at page 8.
+    No more results for filename aa, stopping at page 9.
+    No more results for filename aa, stopping at page 10.
+  Checking filename: ab
+Rate limit exceeded. Sleeping for 120 seconds.
+"""
