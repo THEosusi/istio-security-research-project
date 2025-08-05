@@ -211,7 +211,7 @@ for query_key, query_test in base_queries.items():
                     elif handle_rate_limit(response):
                         continue
                     else:
-                        failed_responses += 1
+                        query_failed_responses += 1
                         print(f"    Failed: filename {filename}, page {page}")
                         print(f"    Status: {response.status_code}, Response: {response.text}")
                         break
