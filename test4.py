@@ -5,6 +5,28 @@ import string
 import os
 import pandas as pd
 from urllib.parse import quote
+import sys
+from datetime import datetime
+
+# simple log
+timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+log_filename = f"istio_security_log_{timestamp}.txt"
+
+class Tee:
+    def __init__(self, *files):
+        self.files = files
+
+    def write(self, message):
+        for file in self.files:
+            file.write(message)
+            file.flush()
+
+    def flush(self):
+        for file in self.files:
+            file.flush()
+
+log_handle = open(log_filename, 'w',encoding='utf-8')
+sys.stdout = Tee(sys.stdout, log_handle)
 
 # token read from environment variables, can put more than two tokens
 # token 1 sleep 10 seconds, token 2 sleep 5 seconds 4 hours
@@ -74,7 +96,6 @@ def append_item_to_parquet(filename, item):
         print(f"Error appending item to Parquet file {filename}: {e}")
         return False
     
-
 base_queries = {
     #mTLS-v1
     "mtls_strict_v1": '"security.istio.io/v1" "kind: PeerAuthentication" "mode: STRICT"',
@@ -123,7 +144,7 @@ def create_search_url(query_test, filename_pattern, page=1):
 
 # seeting for characters
 characters = string.ascii_lowercase + string.digits + "-"
-limited_characters = "ab"
+limited_characters = string.ascii_lowercase + string.digits
 failed_responses = 0
 
 #create main output directory if it doesn't exist
@@ -137,17 +158,22 @@ for query_key, query_test in base_queries.items():
     print(f"{'='*60}\n")
     
     query_failed_responses = 0
-
+    full_name_exclude = set()
+    saved_count = 0
     for char1 in limited_characters:
-        full_name_exclude = set()
-        saved_count = 0
         print(f"\nProcessing char1: {char1} for query {query_key}")
 
         for char2 in characters:
             filename = f"{char1}{char2}"
             print(f"  Checking filename: {filename}")
 
+            no_more_results = False
+            filename_total_items = 0
+
             for page in range(1, 11):
+
+                if no_more_results:
+                    break
                 while True:
                     url = create_search_url(query_test, filename, page)
                     headers = get_headers()
@@ -159,9 +185,12 @@ for query_key, query_test in base_queries.items():
 
                         if not items:
                             print(f"    No more results for filename {filename}, stopping at page {page}.")
+                            no_more_results = True
                             break
-
+                        
+                        filename_total_items += len(items)
                         for item in items:
+                            time.sleep(0.005)
                             repo_name = item["repository"]["full_name"]
 
                             if repo_name not in full_name_exclude:
@@ -177,7 +206,7 @@ for query_key, query_test in base_queries.items():
                                     saved_count += 1
 
                         rotate_token()
-                        time.sleep(5)
+                        time.sleep(2.5)
                         break
                     elif handle_rate_limit(response):
                         continue
@@ -186,29 +215,17 @@ for query_key, query_test in base_queries.items():
                         print(f"    Failed: filename {filename}, page {page}")
                         print(f"    Status: {response.status_code}, Response: {response.text}")
                         break
+            
+            if filename_total_items > 0:
+                print(f"  {filename}: Found {filename_total_items} items.")
+            else:
+                print(f"  {filename}: No items found.")
 
-            if failed_responses >= 6:
-                print("Too many failures, stopping.")
+            if query_failed_responses >= 6:
+                print("Too many failures in one query, stopping.")
                 break
 
-        if  failed_responses >= 30:
-            break
-    print(f"Query {query_key} completed with {len(full_name_exclude)} unique repositories found.")
+        print(f"Query {query_key} completed with {len(full_name_exclude)} unique repositories found.")
 
 print("Done.")
 
-"""
-Processing char1: a for query mtls_strict_v1
-  Checking filename: aa
-    No more results for filename aa, stopping at page 2.
-    No more results for filename aa, stopping at page 3.
-    No more results for filename aa, stopping at page 4.
-    No more results for filename aa, stopping at page 5.
-    No more results for filename aa, stopping at page 6.
-    No more results for filename aa, stopping at page 7.
-    No more results for filename aa, stopping at page 8.
-    No more results for filename aa, stopping at page 9.
-    No more results for filename aa, stopping at page 10.
-  Checking filename: ab
-Rate limit exceeded. Sleeping for 120 seconds.
-"""
