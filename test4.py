@@ -171,7 +171,7 @@ for query_key, query_test in base_queries.items():
             filename_total_items = 0
 
             for page in range(1, 11):
-
+                time.sleep(0.1)
                 if no_more_results:
                     break
                 while True:
@@ -206,7 +206,7 @@ for query_key, query_test in base_queries.items():
                                     saved_count += 1
 
                         rotate_token()
-                        time.sleep(2.5)
+                        time.sleep(2.4)
                         break
                     elif handle_rate_limit(response):
                         continue
