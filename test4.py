@@ -58,9 +58,15 @@ def handle_rate_limit(response):
         msg = response.json().get("message", "").lower()
         if "rate limit exceeded" in msg or "secondary rate limit" in msg:
             retry_after = response.headers.get("Retry-After")
-            wait_time = int(retry_after) if retry_after else 120
+            if retry_after:
+                wait_time = int(retry_after)
+            elif "X-RateLimit-Reset" in response.headers:
+                reset_time = int(response.headers["X-RateLimit-Reset"])
+                wait_time = reset_time - int(time.time()) + 1
+            else:
+                wait_time = 60  # default fallback
             print(f"Rate limit exceeded. Sleeping for {wait_time} seconds.")
-            time.sleep(wait_time)
+            time.sleep(max(wait_time, 1))
             return True
     return False
 
@@ -186,6 +192,8 @@ for query_key, query_test in base_queries.items():
                         if not items:
                             print(f"    No more results for filename {filename}, stopping at page {page}.")
                             no_more_results = True
+                            rotate_token()
+                            time.sleep(1.6)
                             break
                         
                         filename_total_items += len(items)
@@ -206,7 +214,7 @@ for query_key, query_test in base_queries.items():
                                     saved_count += 1
 
                         rotate_token()
-                        time.sleep(2.4)
+                        time.sleep(1.6)
                         break
                     elif handle_rate_limit(response):
                         continue
@@ -221,7 +229,7 @@ for query_key, query_test in base_queries.items():
             else:
                 print(f"  {filename}: No items found.")
 
-            if query_failed_responses >= 6:
+            if query_failed_responses >= 10:
                 print("Too many failures in one query, stopping.")
                 break
 
