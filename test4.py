@@ -133,7 +133,7 @@ base_queries = {
     "provider_authz_v1beta1": '"security.istio.io/v1beta1" "kind: AuthorizationPolicy" "provider:"',
     "ingress_authz_ip_v1beta1": '"security.istio.io/v1beta1" "kind: AuthorizationPolicy" "ipBlocks:"',
     "ingress_authz_remote_ip_v1beta1": '"security.istio.io/v1beta1" "kind: AuthorizationPolicy" "remoteIpBlocks:"',
-
+    
     # mTLS-v1alpha1
     "mtls_strict_v1alpha1": '"authentication.istio.io/v1alpha1" "kind: Policy" "STRICT"',
     "mtls_permissive_v1alpha1": '"authentication.istio.io/v1alpha1" "kind: Policy" "PERMISSIVE"',
@@ -142,6 +142,8 @@ base_queries = {
     "req_auth_v1alpha1": '"authentication.istio.io/v1alpha1" "kind: Policy" "origins"',
     # authorization-v1alpha1
     "cluster_authz_v1alpha1": '"rabc.istio.io/v1alpha1"',
+    # all
+    "all_all_all": '"istio.io/v1"',
 }
 
 def create_search_url(query_test, filename_pattern, page=1):
