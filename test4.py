@@ -106,11 +106,11 @@ base_queries = {
     #mTLS-v1
     "mtls_strict_v1": '"security.istio.io/v1" "kind: PeerAuthentication" "mode: STRICT"',
     "mtls_permissive_v1": '"security.istio.io/v1" "kind: PeerAuthentication" "mode: PERMISSIVE"',
-    "mtls_disabled_v1": '"security.istio.io/v1" "kind: PeerAuthentication" "mode: DISABLED"',
+    "mtls_disable_v1": '"security.istio.io/v1" "kind: PeerAuthentication" "mode: DISABLE"',
     #mTLS-v1beta1
     "mtls_strict_v1beta1": '"security.istio.io/v1beta1" "kind: PeerAuthentication" "mode: STRICT"',
     "mtls_permissive_v1beta1": '"security.istio.io/v1beta1" "kind: PeerAuthentication" "mode: PERMISSIVE"',
-    "mtls_disabled_v1beta1": '"security.istio.io/v1beta1" "kind: PeerAuthentication" "mode: DISABLED"',
+    "mtls_disable_v1beta1": '"security.istio.io/v1beta1" "kind: PeerAuthentication" "mode: DISABLE"',
     #Authentication-v1
     "peer_auth_v1": '"security.istio.io/v1" "kind: PeerAuthentication"',
     "req_auth_v1": '"security.istio.io/v1" "kind: RequestAuthentication"',
@@ -134,12 +134,13 @@ base_queries = {
     "ingress_authz_ip_v1beta1": '"security.istio.io/v1beta1" "kind: AuthorizationPolicy" "ipBlocks:"',
     "ingress_authz_remote_ip_v1beta1": '"security.istio.io/v1beta1" "kind: AuthorizationPolicy" "remoteIpBlocks:"',
 
-    "mtls_disable_v1": '"security.istio.io/v1" "kind: PeerAuthentication" "mode: DISABLE"',
-    "mtls_disable_v1beta1": '"security.istio.io/v1beta1" "kind: PeerAuthentication" "mode: DISABLE"',
+    # mTLS-v1alpha1
     "mtls_strict_v1alpha1": '"authentication.istio.io/v1alpha1" "kind: Policy" "STRICT"',
     "mtls_permissive_v1alpha1": '"authentication.istio.io/v1alpha1" "kind: Policy" "PERMISSIVE"',
+    # authentication-v1alpha1
     "peer_auth_v1alpha1": '"authentication.istio.io/v1alpha1" "kind: Policy" "peers"',
     "req_auth_v1alpha1": '"authentication.istio.io/v1alpha1" "kind: Policy" "origins"',
+    # authorization-v1alpha1
     "cluster_authz_v1alpha1": '"rabc.istio.io/v1alpha1"',
 }
 
