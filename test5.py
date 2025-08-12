@@ -50,17 +50,49 @@ def handle_rate_limit(resp):
             return True
     return False
 
+def clean_data_for_parquet(data):
+
+    if not data:
+        return None
+    
+    problematic_fields = ['custom_properties']
+    cleaned_data = data.copy()
+
+    for field in problematic_fields:
+        if field in cleaned_data:
+            if cleaned_data is None or cleaned_data[field] == {}:
+                del cleaned_data[field]
+            else:
+                cleaned_data[field] = str(cleaned_data[field])
+
+    for key, value in cleaned_data.items():
+        if isinstance(value, list) and not value:
+            cleaned_data[key] = None
+        elif isinstance(value, dict) and len(value) == 0:
+            cleaned_data[key] = None
+
+    return cleaned_data
+
+
+
 def get_repo_info(full_name):
     url = f"https://api.github.com/repos/{full_name}"
     while True:
         resp = requests.get(url, headers=get_headers())
         if resp.status_code == 200:
-            return resp.json()
+            rotate_token()
+            data= resp.json()
+            return clean_data_for_parquet(data)
+        elif resp.status_code == 404:
+            print(f"Repository {full_name} not found.")
+            rotate_token()
+            return None
         elif handle_rate_limit(resp):
             rotate_token()
             continue
         else:
             print(f"Failed to fetch {full_name}: {resp.status_code}")
+            rotate_token()
             return None
 
 base_folder = "istio_repository"
@@ -113,36 +145,3 @@ for root, dirs, files in os.walk(base_folder):
     print(f"Processed {len(combined_df)} repositories in {output_path}.")
 print("All done.")
 log_handle.close()
-"""
-kohsuke@DESKTOP-4TD1VLA:~/aalto/istio-security-research-project$ python3 test5.py
-Processing folder: istio_repository/peer/v1alpha1
-Reading peer_auth_v1alpha1_b.parquet...
-Found 1 unique repositories in thefile.
-Reading peer_auth_v1alpha1_c.parquet...
-Found 13 unique repositories in thefile.
-Reading peer_auth_v1alpha1_a.parquet...
-Found 12 unique repositories in thefile.
-Reading peer_auth_v1alpha1_e.parquet...
-Found 7 unique repositories in thefile.
-Reading peer_auth_v1alpha1_d.parquet...
-Found 16 unique repositories in thefile.
-Total unique repositories in folder: 49
-Remaining repositories to process: 49
-Traceback (most recent call last):
-  File "/home/kohsuke/aalto/istio-security-research-project/test5.py", line 109, in <module>
-    combined_df.to_parquet(output_path, index=False, compression="snappy")
-  File "/home/kohsuke/.local/lib/python3.10/site-packages/pandas/core/frame.py", line 2970, in to_parquet
-    return to_parquet(
-  File "/home/kohsuke/.local/lib/python3.10/site-packages/pandas/io/parquet.py", line 483, in to_parquet
-    impl.write(
-  File "/home/kohsuke/.local/lib/python3.10/site-packages/pandas/io/parquet.py", line 226, in write
-    self.api.parquet.write_table(
-  File "/home/kohsuke/.local/lib/python3.10/site-packages/pyarrow/parquet/core.py", line 1902, in write_table
-    with ParquetWriter(
-  File "/home/kohsuke/.local/lib/python3.10/site-packages/pyarrow/parquet/core.py", line 1021, in __init__
-    self.writer = _parquet.ParquetWriter(
-  File "pyarrow/_parquet.pyx", line 2219, in pyarrow._parquet.ParquetWriter.__cinit__
-  File "pyarrow/error.pxi", line 155, in pyarrow.lib.pyarrow_internal_check_status
-  File "pyarrow/error.pxi", line 92, in pyarrow.lib.check_status
-pyarrow.lib.ArrowNotImplementedError: Cannot write struct type 'custom_properties' with no child field to Parquet. Consider adding a dummy child field.
-"""
