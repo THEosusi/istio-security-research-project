@@ -80,19 +80,15 @@ def get_repo_info(full_name):
     while True:
         resp = requests.get(url, headers=get_headers())
         if resp.status_code == 200:
-            rotate_token()
             data= resp.json()
             return clean_data_for_parquet(data)
         elif resp.status_code == 404:
             print(f"Repository {full_name} not found.")
-            rotate_token()
             return None
         elif handle_rate_limit(resp):
-            rotate_token()
             continue
         else:
             print(f"Failed to fetch {full_name}: {resp.status_code}")
-            rotate_token()
             return None
 
 base_folder = "istio_repository"
@@ -137,11 +133,25 @@ for root, dirs, files in os.walk(base_folder):
         if data:
             new_row = pd.DataFrame([data])
             combined_df = pd.concat([combined_df, new_row], ignore_index=True)
-
             combined_df.to_parquet(output_path, index=False, compression="snappy")
+            pass
         rotate_token()
-        time.sleep(1) 
+        time.sleep(0.01) 
 
     print(f"Processed {len(combined_df)} repositories in {output_path}.")
 print("All done.")
 log_handle.close()
+
+"""
+Reading mtls_disable_v1beta1_a.parquet...
+Found 48 unique repositories in thefile.
+Total unique repositories in folder: 48
+Remaining repositories to process: 48
+Processed 48 repositories in istio_repository/v1beta1_repos.parquet.
+All done.
+Exception ignored in: <__main__.Tee object at 0x7ca5397ebbb0>
+Traceback (most recent call last):
+  File "/home/kohsuke/aalto/istio-security-research-project/test5.py", line 19, in flush
+    f.flush()
+ValueError: I/O operation on closed file.
+"""
