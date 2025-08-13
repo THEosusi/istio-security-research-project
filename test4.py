@@ -141,7 +141,7 @@ base_queries = {
     "peer_auth_v1alpha1": '"authentication.istio.io/v1alpha1" "kind: Policy" "peers"',
     "req_auth_v1alpha1": '"authentication.istio.io/v1alpha1" "kind: Policy" "origins"',
     # authorization-v1alpha1
-    "cluster_authz_v1alpha1": '"rabc.istio.io/v1alpha1"',
+    "cluster_authz_v1alpha1": '"rbac.istio.io/v1alpha1"',
     # all
     "all_all_all": '"istio.io/v1"',
 }
